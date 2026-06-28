@@ -1,26 +1,15 @@
 import { LayoutDashboard, Users, Receipt, UserPlus, BarChart2 } from "lucide-react";
+import type { UserDTO } from "./types";
 
 // Temporary:
-export const ME: User = {
-  id: "u1",
+export const ME: UserDTO = {
+  id: 1,
   name: "Alex Chen",
-  initials: "AC",
-  colorIdx: 0,
-  uemail: "alex2@fairshare.io",
+  email: "alex2@fairshare.io",
+  status: "ACTIVE",
+  createdAt: "string",
+  updatedAt: "string",
 };
-export const USERS: User[] = [
-  ME,
-  { id: "u2", name: "Jordan Lee", initials: "JL", colorIdx: 1, uemail: "jordan@fairshare.io" },
-  { id: "u3", name: "Sam Rivera", initials: "SR", colorIdx: 2, uemail: "jordan@fairshare.io" },
-  { id: "u4", name: "Morgan Kim", initials: "MK", colorIdx: 3, uemail: "jordan@fairshare.io" },
-  { id: "u5", name: "Taylor Pham", initials: "TP", colorIdx: 4, uemail: "jordan@fairshare.io" },
-];
-
-export const GROUPS: Group[] = [
-  { id: "g1", name: "NYC Apartment", memberIds: ["u1", "u2", "u3", "u4"], emoji: "🏠" },
-  { id: "g2", name: "Tokyo Trip 2026", memberIds: ["u1", "u2", "u5"], emoji: "✈️" },
-  { id: "g3", name: "Office Lunch", memberIds: ["u1", "u3", "u4", "u5"], emoji: "🍱" },
-];
 
 export const CURRENCIES = [
   { code: "USD", symbol: "$", rate: 1, name: "US Dollar" },
@@ -29,20 +18,14 @@ export const CURRENCIES = [
   { code: "INR", symbol: "₹", rate: 83.12, name: "Indian Rupee" },
   { code: "JPY", symbol: "¥", rate: 149.5, name: "Japanese Yen" },
 ];
-// Interfaces:
-export interface User {
-  id: string;
-  name: string;
-  initials: string;
-  colorIdx: number;
-  uemail: string;
-}
 
-export interface Group {
+export interface Settlement {
   id: string;
-  name: string;
-  memberIds: string[];
-  emoji: string;
+  fromId: string;
+  toId: string;
+  amount: number;
+  date: string;
+  note: string;
 }
 
 // Data:
