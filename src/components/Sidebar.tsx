@@ -1,13 +1,14 @@
-import { ArrowRightLeft } from "lucide-react";
+import { ArrowRightLeft, Plus } from "lucide-react";
 import { ME, NAV_ITEMS, type View } from "../data/constants";
 import Avatar from "./Avatar";
 
 interface SidebarProps {
   currentView: View;
   onNavigate: (view: View) => void;
+  onAddExpense: () => void;
 }
 
-export default function Sidebar({ currentView, onNavigate }: SidebarProps) {
+export default function Sidebar({ currentView, onNavigate, onAddExpense }: SidebarProps) {
   const activeNav = currentView;
 
   return (
@@ -36,12 +37,22 @@ export default function Sidebar({ currentView, onNavigate }: SidebarProps) {
         })}
       </nav>
 
+      <div className="px-3 pb-4 space-y-2.5">
+        {/* <CurrencySelector /> */}
+        <button
+          onClick={onAddExpense}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary/10 border border-primary/20 text-primary text-sm font-bold hover:bg-primary/20 transition-colors"
+        >
+          <Plus size={15} /> Add Expense
+        </button>
+      </div>
+
       <div className="px-4 py-4 border-t border-border">
         <div className="flex items-center gap-3">
           <Avatar user={ME} size="md" />
           <div className="min-w-0">
             <p className="text-sm font-bold text-foreground truncate">{ME.name}</p>
-            <p className="text-xs text-muted-foreground">{ME.uemail}</p>
+            <p className="text-xs text-muted-foreground">{ME.email}</p>
           </div>
         </div>
       </div>
