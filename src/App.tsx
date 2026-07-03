@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 import Sidebar from "./components/Sidebar";
-import type { View } from "./data/constants";
+import { ME, type View } from "./data/constants";
 import MainLayout from "./pages/MainLayout";
 import DashboardView from "./components/DashboardView";
 import GroupsView from "./components/GroupsView";
@@ -17,6 +17,7 @@ import type {
   ExpenseDTO,
   UserBalanceSummaryDTO,
   RelatedUserDTO,
+  GroupSummaryDTO,
 } from "./data/types";
 import { groupService } from "./services/groupService";
 import { expenseService } from "./services/expenseService";
@@ -34,54 +35,62 @@ function App() {
   const [friends, setFriends] = useState<RelatedUserDTO[]>([]);
   const [error, setError] = useState(true);
 
-  const Base_Url = "http://localhost:8080/v1/api";
+  const [groupData, setGroupData] = useState<GroupSummaryDTO[]>([]);
 
   useEffect(() => {
     const fetchGroups = async () => {
       try {
         setLoading(true);
+
+        const groupSummaries = await groupService.fetchGroupSummaries(ME.id);
+        setGroupData(groupSummaries);
+
         const rawGroups = await groupService.getGroups();
         const balanceSummary = await expenseService.getGlobalBalanceSummary(1);
         const getFriends = await userService.getFriends(1);
         setBalanceSummary(balanceSummary);
         setFriends(getFriends);
 
-        const populatedGroupsData: PopulatedGroup[] = await Promise.all(
-          rawGroups.map(async (group) => {
-            try {
-              // Concurrent execution utilizing clean domain-driven service definitions
-              const [members, expenses] = await Promise.all([
-                groupService.getMembers(group.id),
-                expenseService.getGroupExpenses(group.id),
-              ]);
+        // const populatedGroupsData: PopulatedGroup[] = await Promise.all(
+        //   rawGroups.map(async (group) => {
+        //     try {
+        //       // Concurrent execution utilizing clean domain-driven service definitions
+        //       const [members, expenses] = await Promise.all([
+        //         groupService.getMembers(group.id),
+        //         // expenseService.getGroupExpenses(group.id),
+        //       ]);
 
-              // Compute aggregate metrics safely
-              const balance = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+        //       // Compute aggregate metrics safely
+        //       // const balance = expenses.reduce((sum, exp) => sum + exp.amount, 0);
 
-              return {
-                ...group,
-                members,
-                expenses,
-                balance,
-              };
-            } catch (err) {
-              console.error(`Failed to load data details for group ${group.id}:`, err);
-              return { ...group, members: [], expenses: [], balance: 0 };
-            }
-          }),
-        );
+        //       return {
+        //         ...group,
+        //         members,
+        //         expenses,
+        //         balance,
+        //       };
+        //     } catch (err) {
+        //       console.error(`Failed to load data details for group ${group.id}:`, err);
+        //       return { ...group, members: [], expenses: [], balance: 0 };
+        //     }
+        //   }),
+        // );
 
-        setGroups(populatedGroupsData);
+        // setGroups(populatedGroupsData);
       } catch (error: any) {
         setError(error);
         console.log("Error:: " + error);
       } finally {
-        console.log(groups);
         setLoading(false);
       }
     };
     fetchGroups();
   }, []);
+
+  useEffect(() => {
+    console.log("Group Dta:");
+    console.log(groupData);
+  }, [groupData]);
 
   function handleGroupClick(id: number): void {
     setSelectedGroupId(id);
@@ -129,12 +138,12 @@ function App() {
           />
         )}
         {view === "groups" && (
-          <GroupsView onGroupClick={handleGroupClick} groups={groups} loading={loading} />
+          <GroupsView onGroupClick={handleGroupClick} groups={groupData} loading={loading} />
         )}
         {view === "group-detail" && selectedGroupId && (
           <GroupDetailView
             onAddExpense={handleOnAddExpenseClick}
-            group={groups.find((g) => g.id === selectedGroupId)!}
+            group={groupData.find((g) => g.id === selectedGroupId)!}
             onBack={handleBackTo}
           />
         )}
