@@ -1,4 +1,10 @@
-import type { AddMemberRequest, CreateGroupRequest, GroupDTO, UserDTO } from "../data/types";
+import type {
+  AddMemberRequest,
+  CreateGroupRequest,
+  GroupDTO,
+  GroupSummaryDTO,
+  UserDTO,
+} from "../data/types";
 import { BASE_URL, handleResponse } from "./apiConfig";
 
 export const groupService = {
@@ -54,5 +60,17 @@ export const groupService = {
       method: "DELETE",
     });
     return handleResponse<void>(res);
+  },
+
+  fetchGroupSummaries: async (userId: number): Promise<GroupSummaryDTO[]> => {
+    const response = await fetch(`${BASE_URL}/groups/summaries`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "X-User-Id": String(userId),
+      },
+    });
+
+    return handleResponse<GroupSummaryDTO[]>(response);
   },
 };

@@ -1,3 +1,41 @@
+export type BalanceStatus = "OWES" | "OWED" | "SETTLED";
+
+export interface CurrentUserBalance {
+  amount: number;
+  status: BalanceStatus;
+}
+
+export interface GroupMember {
+  id: number;
+  name: string;
+  avatar: string;
+  netBalance: number;
+  createdAt: string;
+  updatedAt: string;
+  email: string;
+  status: "ACTIVE" | "INACTIVE";
+}
+
+export interface SimplifiedDebt {
+  fromUserId: number;
+  toUserId: number;
+  amount: number;
+}
+
+export interface GroupSummaryDTO {
+  id: number;
+  name: string;
+  description: string;
+  icon: string;
+  status: GroupStatus;
+  createdAt: string; // ISO Date String
+  createdBy: number;
+  expenseCount: number;
+  currentUserBalance: CurrentUserBalance;
+  members: GroupMember[];
+  simplifiedDebts: SimplifiedDebt[];
+}
+
 export interface GroupDTO {
   id: number;
   name: string;
@@ -56,6 +94,14 @@ export interface ExpensePageDTO {
   totalElements: number;
   totalPages: number;
   isLast: boolean;
+}
+
+export interface ExpenseListDTO {
+  content: ExpenseDTO[];
+  hasMoreOlder: boolean;
+  hasMoreNewer: boolean;
+  startCursor: number;
+  endCursor: number;
 }
 
 export type RelationshipContext = "GROUP" | "INDIVIDUAL" | "BOTH";
