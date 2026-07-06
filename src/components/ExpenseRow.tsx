@@ -1,18 +1,20 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import Avatar from "./Avatar";
 import { useCurrency } from "../context/CurrencyContext";
 import { fmtDate, getCatIcon } from "../utils/helper";
 import { ME } from "../data/constants";
-import type { ExpenseDTO, GroupInfo } from "../data/types";
+import type { ExpenseDTO, RelatedUserDTO, SimplifiedGroups } from "../data/types";
 
 export default function ExpenseRow({
   expense,
-  groupInfo,
+  friends,
+  simplifiedGroup,
 }: {
   expense: ExpenseDTO;
   meId: number;
-  groupInfo: GroupInfo;
+  friends: RelatedUserDTO[];
+  simplifiedGroup: SimplifiedGroups | null;
 }) {
   const [open, setOpen] = useState(false);
   const { fmt } = useCurrency();
@@ -20,6 +22,11 @@ export default function ExpenseRow({
   const userShare = expense.splits.find((split) => split.userId == ME.id)?.amount ?? 0;
   const bal = expense.paidBy == ME.id ? expense.amount - userShare : -1 * userShare;
 
+  useEffect(() => {
+    console.log("expense Dta:");
+    console.log(expense);
+    console.log(friends);
+  }, [expense]);
   return (
     <div className="border border-border rounded-2xl overflow-hidden bg-card hover:border-[rgba(0,200,150,0.2)] transition-colors">
       <button
@@ -34,8 +41,8 @@ export default function ExpenseRow({
           <p className="text-xs text-muted-foreground mt-0.5">
             {expense.paidBy === ME.id
               ? "You paid"
-              : `${groupInfo.members.find((member) => member.id == expense.paidBy)?.name.split(" ")[0]} paid`}
-            {groupInfo ? ` · ${groupInfo.icon} ${groupInfo.name}` : " · Direct"}
+              : `${friends.find((member) => member.id == expense.paidBy)?.name.split(" ")[0]} paid`}
+            {simplifiedGroup ? ` · ${simplifiedGroup.icon} ${simplifiedGroup.name}` : " · Direct"}
             {" · "}
             {fmtDate(expense.expenseDate)}
           </p>
@@ -66,8 +73,8 @@ export default function ExpenseRow({
             </span>
           </div>
           <div className="space-y-2">
-            {expense.splits.map((s: any) => {
-              const m = groupInfo.members.find((member) => member.id == s.userId)!;
+            {expense.splits.map((s) => {
+              const m = s.userId == ME.id ? ME : friends.find((member) => member.id == s.userId)!;
               return (
                 <div key={s.userId} className="flex items-center gap-2.5">
                   <Avatar user={m} size="sm" />

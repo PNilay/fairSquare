@@ -113,6 +113,12 @@ export interface GroupInfo {
   members: UserDTO[];
 }
 
+export interface SimplifiedGroups {
+  id: number;
+  name: string;
+  icon: string;
+}
+
 export interface User {
   id: string;
   name: string;

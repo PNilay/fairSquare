@@ -1,12 +1,12 @@
 import { AVATAR_COLORS } from "../data/constants";
-import type { UserDTO } from "../data/types";
+import type { RelatedUserDTO, UserDTO } from "../data/types";
 import { getColorIndex, getInitials } from "../utils/helper";
 
 export default function Avatar({
   user,
   size = "md",
 }: {
-  user: UserDTO;
+  user: UserDTO | RelatedUserDTO;
   size?: "sm" | "md" | "lg";
 }) {
   const sz = { sm: "w-7 h-7 text-xs", md: "w-9 h-9 text-sm", lg: "w-12 h-12 text-base" }[size];

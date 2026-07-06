@@ -11,13 +11,11 @@ import FriendsView from "./components/FriendsView";
 import GroupDetailView from "./components/GroupDetailView";
 import ExpenseModal from "./components/ExpenseModal";
 import type {
-  PopulatedGroup,
-  GroupDTO,
-  UserDTO,
-  ExpenseDTO,
   UserBalanceSummaryDTO,
   RelatedUserDTO,
   GroupSummaryDTO,
+  GroupInfo,
+  SimplifiedGroups,
 } from "./data/types";
 import { groupService } from "./services/groupService";
 import { expenseService } from "./services/expenseService";
@@ -30,12 +28,12 @@ function App() {
   const [showModal, setShowModal] = useState(false);
   const [balanceSummary, setBalanceSummary] = useState<UserBalanceSummaryDTO | null>(null);
   const [selectedFriend, setSelectedFriend] = useState<RelatedUserDTO | null>(null);
-  const [groups, setGroups] = useState<PopulatedGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [friends, setFriends] = useState<RelatedUserDTO[]>([]);
   const [error, setError] = useState(true);
 
   const [groupData, setGroupData] = useState<GroupSummaryDTO[]>([]);
+  const [simplifiedGroups, setSimplifiedGroups] = useState<SimplifiedGroups[]>([]);
 
   useEffect(() => {
     const fetchGroups = async () => {
@@ -45,38 +43,10 @@ function App() {
         const groupSummaries = await groupService.fetchGroupSummaries(ME.id);
         setGroupData(groupSummaries);
 
-        const rawGroups = await groupService.getGroups();
         const balanceSummary = await expenseService.getGlobalBalanceSummary(1);
         const getFriends = await userService.getFriends(1);
         setBalanceSummary(balanceSummary);
         setFriends(getFriends);
-
-        // const populatedGroupsData: PopulatedGroup[] = await Promise.all(
-        //   rawGroups.map(async (group) => {
-        //     try {
-        //       // Concurrent execution utilizing clean domain-driven service definitions
-        //       const [members, expenses] = await Promise.all([
-        //         groupService.getMembers(group.id),
-        //         // expenseService.getGroupExpenses(group.id),
-        //       ]);
-
-        //       // Compute aggregate metrics safely
-        //       // const balance = expenses.reduce((sum, exp) => sum + exp.amount, 0);
-
-        //       return {
-        //         ...group,
-        //         members,
-        //         expenses,
-        //         balance,
-        //       };
-        //     } catch (err) {
-        //       console.error(`Failed to load data details for group ${group.id}:`, err);
-        //       return { ...group, members: [], expenses: [], balance: 0 };
-        //     }
-        //   }),
-        // );
-
-        // setGroups(populatedGroupsData);
       } catch (error: any) {
         setError(error);
         console.log("Error:: " + error);
@@ -90,6 +60,12 @@ function App() {
   useEffect(() => {
     console.log("Group Dta:");
     console.log(groupData);
+    const g = groupData.map((group) => ({
+      id: group.id,
+      name: group.name,
+      icon: group.icon,
+    }));
+    setSimplifiedGroups(g);
   }, [groupData]);
 
   function handleGroupClick(id: number): void {
@@ -130,11 +106,6 @@ function App() {
             onAddExpense={handleOnAddExpenseClick}
             onGroupClick={handleGroupClick}
             balanceSummary={balanceSummary!}
-            expenses={groups.flatMap((group) =>
-              group.expenses.map((expense) => ({
-                ...expense,
-              })),
-            )}
           />
         )}
         {view === "groups" && (
@@ -145,15 +116,19 @@ function App() {
             onAddExpense={handleOnAddExpenseClick}
             group={groupData.find((g) => g.id === selectedGroupId)!}
             onBack={handleBackTo}
+            friends={friends}
           />
         )}
-        {view === "expenses" && <ExpensesView />}
+        {view === "expenses" && (
+          <ExpensesView friends={friends} simplifiedGroups={simplifiedGroups} />
+        )}
         {view === "friends" && (
-          <FriendsView friends={friends} groups={groups} onFriendClick={handleFriendClick} />
+          <FriendsView friends={friends} groups={groupData} onFriendClick={handleFriendClick} />
         )}
         {view === "friend-detail" && selectedFriend && (
           <FriendDetailView
             friend={selectedFriend}
+            groups={groupData}
             // onAddExpense={handleOnAddExpenseClick}
             // group={groups.find((g) => g.id === selectedGroupId)!}
             onBack={handleBackTo}
@@ -166,7 +141,7 @@ function App() {
         <ExpenseModal
           onClose={() => setShowModal(false)}
           initialGroupId={selectedGroupId ?? undefined}
-          group={groups.find((g) => g.id === selectedGroupId)!}
+          group={groupData.find((g) => g.id === selectedGroupId)!}
           friends={friends}
         />
       )}
