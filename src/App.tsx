@@ -142,6 +142,7 @@ function App() {
           onClose={() => setShowModal(false)}
           initialGroupId={selectedGroupId ?? undefined}
           group={groupData.find((g) => g.id === selectedGroupId)!}
+          groups={groupData}
           friends={friends}
         />
       )}
