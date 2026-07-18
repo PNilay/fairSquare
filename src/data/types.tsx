@@ -67,6 +67,19 @@ export interface ExpenseDTO {
   splits: ExpenseSplit[];
 }
 
+export interface CreateExpenseRequest {
+  groupId: number | null;
+  paidBy: number;
+  amount: number;
+  description: string;
+  category: ExpenseCategory;
+  currency: string;
+  notes: string;
+  expenseDate: string;
+  splitType: SplitStrategy;
+  splits: ExpenseSplit[];
+}
+
 export interface PopulatedGroup extends GroupDTO {
   members: UserDTO[];
   expenses: ExpenseDTO[];

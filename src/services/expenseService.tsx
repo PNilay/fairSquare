@@ -1,4 +1,5 @@
 import type {
+  CreateExpenseRequest,
   ExpenseDTO,
   ExpenseListDTO,
   ExpensePageDTO,
@@ -19,6 +20,17 @@ export const expenseService = {
 
   getExpense: async (expenseId: number): Promise<ExpenseDTO> => {
     const res = await fetch(`${BASE_URL}/expenses/${expenseId}`);
+    return handleResponse<ExpenseDTO>(res);
+  },
+
+  createExpense: async (expense: CreateExpenseRequest): Promise<ExpenseDTO> => {
+    const res = await fetch(`${BASE_URL}/expenses`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(expense),
+    });
     return handleResponse<ExpenseDTO>(res);
   },
 
