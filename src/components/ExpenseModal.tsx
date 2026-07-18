@@ -2,8 +2,11 @@ import React, { useMemo, useState } from "react";
 import { X, Search, CheckCircle2, AlertCircle } from "lucide-react";
 import Avatar from "./Avatar";
 import { useCurrency } from "../context/CurrencyContext";
+import { expenseService } from "../services/expenseService";
 import {
   CATEGORIES,
+  type CreateExpenseRequest,
+  type ExpenseDTO,
   type ExpenseCategory,
   type GroupMember,
   type GroupSummaryDTO,
@@ -31,12 +34,14 @@ export default function ExpenseModal({
   group,
   groups,
   friends,
+  onExpenseCreated,
 }: {
   onClose: () => void;
   initialGroupId?: number;
   group: GroupSummaryDTO;
   groups: GroupSummaryDTO[];
   friends: RelatedUserDTO[];
+  onExpenseCreated?: (expense: ExpenseDTO) => void;
 }) {
   const { fmt } = useCurrency();
 
@@ -50,11 +55,14 @@ export default function ExpenseModal({
   const [paidById, setPaidById] = useState<number>(ME.id);
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
+  const [notes, setNotes] = useState("");
   const [category, setCategory] = useState<ExpenseCategory>("FOOD");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [strategy, setStrategy] = useState<SplitStrategy>("EQUAL");
   const [exactAmounts, setExactAmounts] = useState<Record<string, string>>({});
   const [pcts, setPcts] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const filteredFriends = friends.filter((f) =>
     f.name.toLowerCase().includes(friendSearch.toLowerCase()),
@@ -85,6 +93,86 @@ export default function ExpenseModal({
 
   const toggleFriend = (id: number) =>
     setSelectedFriendIds((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+
+  const handleSaveExpense = async () => {
+    setSaveError(null);
+
+    if (ctx === "group" && (groupId === null || groupId === undefined)) {
+      setSaveError("Please select a group.");
+      return;
+    }
+
+    if (total <= 0) {
+      setSaveError("Enter a valid expense amount.");
+      return;
+    }
+
+    if (ctx === "friend" && selectedFriendIds.length === 0) {
+      setSaveError("Select at least one friend to split with.");
+      return;
+    }
+
+    if (strategy === "EXACT" && !exactOk) {
+      setSaveError("Exact split values must match the total amount.");
+      return;
+    }
+
+    if (strategy === "PERCENTAGE" && !pctOk) {
+      setSaveError("Percentage shares must total 100%.");
+      return;
+    }
+
+    const expenseAmount = Number(total.toFixed(2));
+    const expenseDateISO = new Date(date).toISOString();
+
+    const splits = members.map((member) => {
+      const memberId = member.id.toString();
+      let amountValue = 0;
+      let percentageValue = 0;
+
+      if (strategy === "EQUAL") {
+        amountValue = expenseAmount / members.length;
+        percentageValue = 100 / members.length;
+      } else if (strategy === "EXACT") {
+        amountValue = parseFloat(exactAmounts[memberId] ?? "0");
+        percentageValue = expenseAmount > 0 ? (amountValue / expenseAmount) * 100 : 0;
+      } else if (strategy === "PERCENTAGE") {
+        percentageValue = parseFloat(pcts[memberId] ?? "0");
+        amountValue = expenseAmount * (percentageValue / 100);
+      }
+
+      return {
+        userId: member.id,
+        amount: Number(amountValue.toFixed(2)),
+        percentage: Number(percentageValue.toFixed(2)),
+        share: Number(amountValue.toFixed(2)),
+      };
+    });
+
+    const request: CreateExpenseRequest = {
+      groupId: ctx === "group" ? groupId : null,
+      paidBy: paidById,
+      amount: expenseAmount,
+      description: description || "",
+      category,
+      currency: expCurrency,
+      notes,
+      expenseDate: expenseDateISO,
+      splitType: strategy,
+      splits,
+    };
+
+    try {
+      setSaving(true);
+      const createdExpense = await expenseService.createExpense(request);
+      onExpenseCreated?.(createdExpense);
+      onClose();
+    } catch (error: any) {
+      setSaveError(error?.message ?? "Failed to save expense. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const iCls =
     "w-full bg-muted border border-border rounded-xl px-3 py-2.5 text-foreground text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/40 transition-shadow";
@@ -193,6 +281,18 @@ export default function ExpenseModal({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="e.g. Dinner at Nobu"
               className={iCls}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">
+              Notes
+            </label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Optional details about the expense"
+              className={`${iCls} min-h-[5rem] resize-none`}
             />
           </div>
 
@@ -423,16 +523,29 @@ export default function ExpenseModal({
           )}
         </div>
 
-        <div className="px-6 py-4 border-t border-border flex gap-3 flex-shrink-0">
-          <button
-            onClick={onClose}
-            className="flex-1 py-2.5 rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-muted text-sm font-bold transition-colors"
-          >
-            Cancel
-          </button>
-          <button className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:opacity-90 active:scale-[0.98] transition-all shadow-lg shadow-primary/20">
-            Save Expense
-          </button>
+        <div className="px-6 py-4 border-t border-border flex gap-3 flex-shrink-0 flex-col sm:flex-row">
+          <div className="flex-1">
+            {saveError && (
+              <div className="rounded-xl border border-[#f0365b]/20 bg-[#f0365b]/10 px-3 py-2 text-sm text-[#f0365b]">
+                {saveError}
+              </div>
+            )}
+          </div>
+          <div className="flex-1 flex gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 py-2.5 rounded-xl border border-border text-muted-foreground hover:text-foreground hover:bg-muted text-sm font-bold transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveExpense}
+              disabled={saving}
+              className="flex-1 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-bold hover:opacity-90 active:scale-[0.98] transition-all shadow-lg shadow-primary/20 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {saving ? "Saving..." : "Save Expense"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
