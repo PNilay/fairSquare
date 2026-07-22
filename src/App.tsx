@@ -21,11 +21,14 @@ import { groupService } from "./services/groupService";
 import { expenseService } from "./services/expenseService";
 import { userService } from "./services/userService";
 import FriendDetailView from "./components/FriendDetailView";
+import CreateEditGroupView from "./components/CreateEditGroupView";
 
 function App() {
   const [view, setView] = useState<View>("dashboard");
   const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState("expense");
+  const [addEditGroup, setAddEditGroup] = useState<"create" | "edit">("create");
   const [balanceSummary, setBalanceSummary] = useState<UserBalanceSummaryDTO | null>(null);
   const [selectedFriend, setSelectedFriend] = useState<RelatedUserDTO | null>(null);
   const [loading, setLoading] = useState(true);
@@ -73,6 +76,12 @@ function App() {
     setView("group-detail");
   }
 
+  function handleCreateEditGroupClick(id: number | null, type: "create" | "edit"): void {
+    setShowModal(true);
+    setForm("group");
+    setAddEditGroup(type);
+  }
+
   const handleFriendClick = (friend: RelatedUserDTO) => {
     setSelectedFriend(friend);
     setView("friend-detail");
@@ -109,7 +118,12 @@ function App() {
           />
         )}
         {view === "groups" && (
-          <GroupsView onGroupClick={handleGroupClick} groups={groupData} loading={loading} />
+          <GroupsView
+            onGroupClick={handleGroupClick}
+            groups={groupData}
+            loading={loading}
+            onAddGroupClick={handleCreateEditGroupClick}
+          />
         )}
         {view === "group-detail" && selectedGroupId && (
           <GroupDetailView
@@ -138,13 +152,25 @@ function App() {
       </MainLayout>
 
       {showModal && (
-        <ExpenseModal
-          onClose={() => setShowModal(false)}
-          initialGroupId={selectedGroupId ?? undefined}
-          group={groupData.find((g) => g.id === selectedGroupId)!}
-          groups={groupData}
-          friends={friends}
-        />
+        <>
+          {form === "expense" && (
+            <ExpenseModal
+              onClose={() => setShowModal(false)}
+              initialGroupId={selectedGroupId ?? undefined}
+              group={groupData.find((g) => g.id === selectedGroupId)!}
+              groups={groupData}
+              friends={friends}
+            />
+          )}
+
+          {form === "group" && (
+            <CreateEditGroupView
+              onClose={() => setShowModal(false)}
+              mode={addEditGroup}
+              friends={friends}
+            />
+          )}
+        </>
       )}
     </>
   );

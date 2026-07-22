@@ -192,6 +192,7 @@ export interface UserDTO {
 export interface CreateGroupRequest {
   name: string;
   description?: string;
+  createdBy: number;
 }
 
 export interface AddMemberRequest {
