@@ -193,6 +193,7 @@ export interface CreateGroupRequest {
   name: string;
   description?: string;
   createdBy: number;
+  icon?: string;
 }
 
 export interface AddMemberRequest {

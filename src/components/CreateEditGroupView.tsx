@@ -72,6 +72,7 @@ function CreateEditGroupView({
           name: name.trim(),
           description: description,
           createdBy: ME.id,
+          icon: emoji,
         });
 
         const toAdd = memberIds.map((id) => Number(id));
