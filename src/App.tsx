@@ -89,6 +89,7 @@ function App() {
 
   function handleOnAddExpenseClick(): void {
     setShowModal(true);
+    setForm("expense");
   }
 
   function handleBackTo(prev: View): void {
@@ -131,6 +132,7 @@ function App() {
             group={groupData.find((g) => g.id === selectedGroupId)!}
             onBack={handleBackTo}
             friends={friends}
+            onAddGroupClick={handleCreateEditGroupClick}
           />
         )}
         {view === "expenses" && (
@@ -167,6 +169,7 @@ function App() {
             <CreateEditGroupView
               onClose={() => setShowModal(false)}
               mode={addEditGroup}
+              group={groupData.find((g) => g.id === selectedGroupId)!}
               friends={friends}
             />
           )}

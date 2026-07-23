@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { X, UserMinus, Search, Plus, Mail } from "lucide-react";
 import Avatar from "./Avatar";
 import { ME } from "../data/constants";
-import type { Group } from "../data/types";
+import type { Group, GroupSummaryDTO } from "../data/types";
 import type { RelatedUserDTO } from "../data/types";
 import { groupService } from "../services/groupService";
 
@@ -15,16 +15,16 @@ function CreateEditGroupView({
   onUpdate,
 }: {
   mode: "create" | "edit";
-  group?: Group;
+  group?: GroupSummaryDTO;
   friends: RelatedUserDTO[];
   onClose: () => void;
-  onCreate?: (name: string, emoji: string, memberIds: string[]) => void;
-  onUpdate?: (id: string, u: Partial<Omit<Group, "id">>) => void;
+  onCreate?: (name: string, emoji: string, memberIds: number[]) => void;
+  onUpdate?: (id: number, u: Partial<Omit<Group, "id">>) => void;
 }) {
   const [name, setName] = useState(group?.name ?? "");
-  const [emoji, setEmoji] = useState(group?.emoji ?? "🏠");
-  const [memberIds, setMemberIds] = useState<string[]>(
-    (group?.memberIds ?? []).filter((id) => id !== String(ME.id)),
+  const [emoji, setEmoji] = useState(group?.icon ?? "🏠");
+  const [memberIds, setMemberIds] = useState<number[]>(
+    (group?.members?.map((member) => member.id) ?? []).filter((id) => id !== ME.id),
   );
   const [memberSearch, setMemberSearch] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
@@ -36,17 +36,17 @@ function CreateEditGroupView({
   const availableToAdd = friends.filter(
     (u) =>
       u.id !== ME.id &&
-      !memberIds.includes(String(u.id)) &&
+      !memberIds.includes(u.id) &&
       u.name.toLowerCase().includes(memberSearch.toLowerCase()),
   );
 
   const currentMembers = [
     ME,
-    ...memberIds.map((id) => friends.find((u) => String(u.id) === id)!).filter(Boolean),
+    ...memberIds.map((id) => friends.find((u) => u.id === id)!).filter(Boolean),
   ];
 
-  const addMember = (id: string) => setMemberIds((p) => [...p, id]);
-  const removeMember = (id: string) => setMemberIds((p) => p.filter((x) => x !== id));
+  const addMember = (id: number) => setMemberIds((p) => [...p, id]);
+  const removeMember = (id: number) => setMemberIds((p) => p.filter((x) => x !== id));
 
   const EMOJI_OPTIONS = ["🏠", "✈️", "🍔", "🎉", "💼", "🚗", "🏖️", "📚", "🍹", "🎵"];
 
@@ -80,30 +80,30 @@ function CreateEditGroupView({
 
         onCreate?.(name.trim(), emoji, memberIds);
       } else if (mode === "edit" && group) {
-        const gid = parseInt(group.id, 10);
-        await groupService.updateGroup(gid, { name: name.trim(), createdBy: ME.id });
+        // const gid = parseInt(group.id, 10);
+        await groupService.updateGroup(group.id, { name: name.trim(), createdBy: ME.id });
 
-        const original = new Set((group.memberIds ?? []).map((id) => String(id)));
-        const updated = new Set([String(ME.id), ...memberIds]);
+        const original = new Set((group.members.map((member) => member.id) ?? []).map((id) => id));
+        const updated = new Set([ME.id, ...memberIds]);
 
         // add new members
         for (const id of Array.from(updated)) {
           if (!original.has(id)) {
-            await groupService.addMember(gid, { userId: Number(id) });
+            await groupService.addMember(group.id, { userId: Number(id) });
           }
         }
         // remove members
         for (const id of Array.from(original)) {
           if (!updated.has(id)) {
-            await groupService.removeMember(gid, Number(id));
+            await groupService.removeMember(group.id, Number(id));
           }
         }
 
-        onUpdate?.(group.id, {
-          name: name.trim(),
-          emoji,
-          memberIds: [String(ME.id), ...memberIds],
-        });
+        // onUpdate?.(group.id, {
+        //   name: name.trim(),
+        //   emoji,
+        //   memberIds: [ME.id, ...memberIds],
+        // });
       }
 
       onClose();
@@ -123,7 +123,7 @@ function CreateEditGroupView({
       <div className="relative bg-card border border-border rounded-t-3xl sm:rounded-2xl w-full sm:max-w-lg max-h-[92dvh] flex flex-col shadow-2xl">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border flex-shrink-0">
           <h2 className="text-base font-bold text-foreground">
-            {mode === "create" ? "Create New Group" : "Edit Group"}
+            {mode === "create" ? "Create New Group" : "Group Settings"}
           </h2>
           <button
             onClick={onClose}
@@ -187,7 +187,7 @@ function CreateEditGroupView({
                   </span>
                   {m.id !== ME.id && (
                     <button
-                      onClick={() => removeMember(String(m.id))}
+                      onClick={() => removeMember(m.id)}
                       className="w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-[#f0365b] hover:bg-[#f0365b]/10 transition-colors"
                       title="Remove member"
                     >
@@ -225,7 +225,7 @@ function CreateEditGroupView({
                 {availableToAdd.map((u) => (
                   <button
                     key={u.id}
-                    onClick={() => addMember(String(u.id))}
+                    onClick={() => addMember(u.id)}
                     className="w-full flex items-center gap-3 bg-muted hover:bg-accent rounded-xl px-3 py-2.5 transition-colors"
                   >
                     <Avatar user={u} size="sm" />
